@@ -13,18 +13,19 @@ just type your name when you save a puzzle or finish playing one.
 - `server/` — Express server that wraps the same logic, for local development only
 - `lib/` — shared game logic + storage, used by both `api/` and `server/`
 
-Storage: `lib/db.js` uses Redis (via Vercel's marketplace Redis/Upstash
-integration) when `UPSTASH_REDIS_REST_URL`/`TOKEN` (or the legacy
-`KV_REST_API_URL`/`TOKEN`) env vars are present, and falls back to a local
-`server/db.json` file otherwise. This means the exact same code path runs
-locally and in production — only the storage backend differs.
+Storage: `lib/db.js` uses [Supabase](https://supabase.com) (Postgres) when
+`SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` env vars are present, and falls
+back to a local `server/db.json` file otherwise. This means the exact same
+code path runs locally and in production — only the storage backend
+differs. Supabase's free tier is plenty for this project (no credit card
+required), unlike Vercel's marketplace Redis integration.
 
 ## Local development
 
 From the project root:
 
 ```bash
-npm install              # installs root deps (nanoid, @upstash/redis)
+npm install              # installs root deps (nanoid, @supabase/supabase-js)
 npm install --prefix server
 npm install --prefix client
 
@@ -33,7 +34,7 @@ npm run dev:client        # frontend on http://localhost:5173 (or next free port
 ```
 
 The Vite dev server proxies `/api` to the Express backend, so both must be
-running. No Redis env vars are set locally, so data is stored in
+running. No Supabase env vars are set locally, so data is stored in
 `server/db.json`.
 
 ## Deploying to Vercel
@@ -56,20 +57,31 @@ to a real database. Steps:
    directory as `.` (the build/output settings are already defined in
    `vercel.json`).
 
-3. **Add a Redis store** — in the Vercel project, go to the **Storage** tab →
-   **Marketplace Database Integrations** → add a **Redis** integration
-   (Upstash). Connect it to this project; Vercel will automatically add the
-   `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` (or `KV_REST_API_*`)
-   environment variables — no manual copying needed.
+3. **Create a free Supabase project** — [supabase.com](https://supabase.com) →
+   New project. Once it's provisioned, open the **SQL Editor** and run:
+   ```sql
+   create table kv_store (
+     key text primary key,
+     value jsonb not null
+   );
+   ```
+   Then grab **Project Settings → API**: copy the **Project URL** and the
+   **`service_role` secret key** (not the `anon` key — this app runs entirely
+   server-side and needs write access without RLS restrictions).
 
-4. **Deploy.** Vercel will run the build in `vercel.json`
+4. **Add the env vars to Vercel** — in the Vercel project, go to
+   **Settings → Environment Variables** and add:
+   - `SUPABASE_URL` — the Project URL from step 3
+   - `SUPABASE_SERVICE_ROLE_KEY` — the `service_role` key from step 3
+
+5. **Deploy.** Vercel will run the build in `vercel.json`
    (`cd client && npm install && npm run build`), install root dependencies
    for the `api/` functions automatically, and serve everything from one
    domain — static site + `/api/*` functions.
 
 Once deployed, the site is "always live": there's no process to keep
 running or restart. Each `/api/*` request just spins up a serverless
-function on demand, and puzzle/score data persists in Redis across
+function on demand, and puzzle/score data persists in Supabase across
 deploys and restarts.
 
 ### Redeploying / local CLI alternative
@@ -83,6 +95,6 @@ vercel        # first run: log in, link/create the project
 vercel --prod # deploy to production
 ```
 
-Either way, remember to add the Redis integration (step 3 above) before
+Either way, remember to set up Supabase and its env vars (steps 3-4 above) before
 your first deploy, or the app will silently try to write to a local file
 that doesn't persist between serverless invocations.
