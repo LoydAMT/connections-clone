@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import NameModal from "../components/NameModal.jsx";
-import { getGame, getScores, submitScore } from "../api.js";
+import { getGame, getScores, submitScore, deleteGame } from "../api.js";
 
 const MAX_MISTAKES = 4;
 
@@ -22,6 +22,7 @@ function formatTime(totalSeconds) {
 
 export default function PlayGame() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [game, setGame] = useState(null);
   const [error, setError] = useState("");
   const [tiles, setTiles] = useState([]);
@@ -150,6 +151,16 @@ export default function PlayGame() {
     }
   }
 
+  async function handleDeleteGame() {
+    if (!window.confirm("Delete this puzzle? This can't be undone.")) return;
+    try {
+      await deleteGame(id);
+      navigate("/play");
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   if (error) return <div className="form-error">{error}</div>;
   if (!game) return <div className="loading">Loading puzzle…</div>;
 
@@ -158,6 +169,15 @@ export default function PlayGame() {
       <div className="play-header">
         <h1>{game.title}</h1>
         <p className="page-subtitle">by {game.creatorName}</p>
+      </div>
+
+      <div className="play-owner-actions">
+        <Link to={`/edit/${id}`} className="btn btn-ghost">
+          Edit puzzle
+        </Link>
+        <button type="button" className="btn btn-ghost" onClick={handleDeleteGame}>
+          Delete puzzle
+        </button>
       </div>
 
       <div className="play-stats">

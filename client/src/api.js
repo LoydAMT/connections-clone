@@ -5,6 +5,7 @@ async function handle(res) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `Request failed (${res.status})`);
   }
+  if (res.status === 204) return null;
   return res.json();
 }
 
@@ -22,6 +23,18 @@ export function createGame(payload) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   }).then(handle);
+}
+
+export function updateGame(id, payload) {
+  return fetch(`${BASE}/games/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }).then(handle);
+}
+
+export function deleteGame(id) {
+  return fetch(`${BASE}/games/${id}`, { method: "DELETE" }).then(handle);
 }
 
 export function getScores(id) {

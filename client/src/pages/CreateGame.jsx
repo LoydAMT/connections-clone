@@ -1,13 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import NameModal from "../components/NameModal.jsx";
+import PuzzleForm, { emptyGroups, validatePuzzle } from "../components/PuzzleForm.jsx";
 import { createGame } from "../api.js";
-
-const DIFFICULTY_LABELS = ["Yellow (easiest)", "Green", "Blue", "Purple (trickiest)"];
-
-function emptyGroups() {
-  return Array.from({ length: 4 }, () => ({ category: "", words: ["", "", "", ""] }));
-}
 
 export default function CreateGame() {
   const [title, setTitle] = useState("");
@@ -33,19 +28,9 @@ export default function CreateGame() {
     );
   }
 
-  function validate() {
-    for (const g of groups) {
-      if (!g.category.trim()) return "Every group needs a category name.";
-      if (g.words.some((w) => !w.trim())) return "Every group needs 4 words filled in.";
-    }
-    const allWords = groups.flatMap((g) => g.words.map((w) => w.trim().toUpperCase()));
-    if (new Set(allWords).size !== 16) return "All 16 words must be unique.";
-    return "";
-  }
-
   function handleSubmit(e) {
     e.preventDefault();
-    const validationError = validate();
+    const validationError = validatePuzzle(groups);
     if (validationError) {
       setError(validationError);
       return;
@@ -103,52 +88,17 @@ export default function CreateGame() {
         Fill in 4 categories, each with 4 words. Order them from easiest (yellow) to trickiest (purple).
       </p>
 
-      <form onSubmit={handleSubmit}>
-        <label className="puzzle-title-field">
-          Puzzle title (optional)
-          <input
-            type="text"
-            value={title}
-            maxLength={60}
-            placeholder="e.g. Friday Trivia"
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </label>
-
-        {groups.map((g, gi) => (
-          <fieldset key={gi} className={`group-fieldset difficulty-${gi}`}>
-            <legend>{DIFFICULTY_LABELS[gi]}</legend>
-            <input
-              type="text"
-              className="category-input"
-              placeholder="Category name (e.g. Types of Pasta)"
-              value={g.category}
-              maxLength={40}
-              onChange={(e) => updateCategory(gi, e.target.value)}
-            />
-            <div className="words-grid">
-              {g.words.map((w, wi) => (
-                <input
-                  key={wi}
-                  type="text"
-                  placeholder={`Word ${wi + 1}`}
-                  value={w}
-                  maxLength={20}
-                  onChange={(e) => updateWord(gi, wi, e.target.value)}
-                />
-              ))}
-            </div>
-          </fieldset>
-        ))}
-
-        {error && <div className="form-error">{error}</div>}
-
-        <div className="form-actions">
-          <button type="submit" className="btn btn-primary" disabled={saving}>
-            {saving ? "Saving..." : "Save Puzzle"}
-          </button>
-        </div>
-      </form>
+      <PuzzleForm
+        title={title}
+        groups={groups}
+        onTitleChange={setTitle}
+        onCategoryChange={updateCategory}
+        onWordChange={updateWord}
+        onSubmit={handleSubmit}
+        error={error}
+        saving={saving}
+        submitLabel="Save Puzzle"
+      />
 
       {showNameModal && (
         <NameModal

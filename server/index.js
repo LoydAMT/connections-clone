@@ -4,7 +4,9 @@ import { readDb, writeDb } from "../lib/db.js";
 import {
   listGameSummaries,
   buildGame,
+  updateGame,
   findGame,
+  removeGame,
   sortedScores,
   buildScore,
 } from "../lib/games.js";
@@ -34,6 +36,30 @@ app.get("/api/games/:id", async (req, res) => {
   try {
     const db = await readDb();
     res.json(findGame(db, req.params.id));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+app.put("/api/games/:id", async (req, res) => {
+  try {
+    const db = await readDb();
+    const game = findGame(db, req.params.id);
+    updateGame(game, req.body);
+    await writeDb(db);
+    res.json(game);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+app.delete("/api/games/:id", async (req, res) => {
+  try {
+    const db = await readDb();
+    findGame(db, req.params.id);
+    removeGame(db, req.params.id);
+    await writeDb(db);
+    res.status(204).end();
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });
   }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { listGames } from "../api.js";
+import { listGames, deleteGame } from "../api.js";
 
 function formatDate(iso) {
   const d = new Date(iso);
@@ -24,6 +24,16 @@ export default function BrowseGames() {
       .catch((err) => setError(err.message));
   }, []);
 
+  async function handleDelete(id) {
+    if (!window.confirm("Delete this puzzle? This can't be undone.")) return;
+    try {
+      await deleteGame(id);
+      setGames((prev) => prev.filter((g) => g.id !== id));
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   if (error) return <div className="form-error">{error}</div>;
   if (!games) return <div className="loading">Loading games…</div>;
 
@@ -40,7 +50,7 @@ export default function BrowseGames() {
       ) : (
         <ul className="game-list">
           {games.map((g) => (
-            <li key={g.id}>
+            <li key={g.id} className="game-list-row">
               <Link to={`/play/${g.id}`} className="game-list-item">
                 <div className="game-list-main">
                   <h3>{g.title}</h3>
@@ -53,6 +63,19 @@ export default function BrowseGames() {
                   {g.bestTime != null && <span>best {formatTime(g.bestTime)}</span>}
                 </div>
               </Link>
+              <div className="game-owner-actions">
+                <Link to={`/edit/${g.id}`} className="icon-btn" title="Edit puzzle">
+                  ✏️
+                </Link>
+                <button
+                  type="button"
+                  className="icon-btn"
+                  title="Delete puzzle"
+                  onClick={() => handleDelete(g.id)}
+                >
+                  🗑️
+                </button>
+              </div>
             </li>
           ))}
         </ul>
