@@ -1,0 +1,19 @@
+{
+  "name": "connections-clone",
+  "version": "1.0.0",
+  "description": "A simplified clone of the NYT Connections word-grouping game. No accounts — just type your name when you save a puzzle or finish playing one.",
+  "scripts": {
+    "dev:server": "node server/index.js",
+    "dev:client": "npm run dev --prefix client",
+    "build": "npm run build --prefix client"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@upstash/redis": "^1.38.0",
+    "nanoid": "^5.1.16"
+  }
+}
